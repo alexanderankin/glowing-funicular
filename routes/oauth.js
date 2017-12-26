@@ -72,4 +72,18 @@ router.post('/token', function (req, res, next) {
   });
 });
 
+router.post('/check_token', function (req, res, next) {
+  var token = req.body.token;
+  lib.checkToken(function (err, verdict) {
+    var success;
+    if (verdict) {
+      success = true;
+    } else {
+      success = false;
+    }
+
+    res.json({ success });
+  });
+});
+
 module.exports = router;

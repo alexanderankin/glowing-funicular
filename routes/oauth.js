@@ -61,6 +61,8 @@ router.get('/authorize', function (req, res, next) {
 
 /**
  * todo: basic authentication.
+ * 
+ * https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
  */
 router.post('/token', lib.basicAuthMW, function (req, res, next) {
   var client_id = req.basicAuth.username
@@ -71,18 +73,28 @@ router.post('/token', lib.basicAuthMW, function (req, res, next) {
     || req.body.client_secret;
 
   lib.isValidClient(client_id, client_secret, function (e, r) {
-    if (!r) return res.json({err: true});
+    if (!r) return res.json(lib.accessTokenErrors.invalid_client);
 
     var code = req.body.code;
     var token = lib.codeStore.get(code);
+
+    if (!token) {
+      return res.status(400).json(lib.accessTokenErrors.invalid_grant);
+    }
 
     var token_type = "bearer";
     var expires_in = 3600;
     var scope = token.scopes ? token.scopes.join(" ") : undefined;
     var state = token.state;
+    var refresh_token
 
-    res.json({ token });
+    res.json({
+      access_token, refresh_token,
+      token_type, expires_in, scope, state
+    });
   });
+}, function (err, req, res, next) {
+  res.status(400).json(lib.accessTokenErrors.invalid_request);
 });
 
 router.post('/check_token', function (req, res, next) {

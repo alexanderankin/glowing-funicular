@@ -8,7 +8,6 @@ describe('Tests functionality of CodeStore', function () {
     cs.store('code', 'user', ['scope1', 'scope2'], 'samplestate');
 
     var code = cs.get('code');
-    console.log("code", code);
     expect(code).to.deep.equal({
       code: 'code',
       user   : 'user',

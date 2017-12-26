@@ -29,7 +29,7 @@ router.post('/loginpage', loginpagePost = function (req, res, next) {
 
     lib.generateRandom(function (err, value) {
       var code = value;
-      lib.codeStore.store(code, req.body.username, req.session.scope);
+      lib.codeStore.store(code, req.body.username, req.session.scopes);
 
       res.render('oauth', { title: 'Express | login post', page: `
         <pre>${JSON.stringify(req.session)}</pre>
@@ -46,7 +46,7 @@ router.post('/loginpage', loginpagePost = function (req, res, next) {
 router.get('/authorize', function (req, res, next) {
   req.session.redirect_uri = req.query.redirect_uri;
   req.session.client_id = req.query.client_id;
-  req.session.scope = req.query.scope;
+  req.session.scopes = req.query.scopes;
 
   res.render('oauth', { title: 'Express | authorize get', page: `
     <pre>${JSON.stringify(req.body)}</pre>
@@ -59,10 +59,17 @@ router.get('/authorize', function (req, res, next) {
   `});
 });
 
+/**
+ * todo: basic authentication.
+ */
 router.post('/token', function (req, res, next) {
-  var code = req.body.code;
-  var token = lib.codeStore.get(code);
-  res.json({ token });
+  lib.isValidClient(req.body.client_id, req.body.client_secret, function (e, r) {
+    if (!r) return res.json({err: true});
+
+    var code = req.body.code;
+    var token = lib.codeStore.get(code);
+    res.json({ token });
+  });
 });
 
 module.exports = router;

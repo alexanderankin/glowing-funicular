@@ -31,9 +31,10 @@ router.post('/loginpage', loginpagePost = function (req, res, next) {
       var code = value;
       lib.codeStore.store(code, req.body.username, req.session.scopes, req.session.state);
 
+      var redirectingUrl = `${req.session.redirect_uri}?${querystring.stringify({code})}`;
       res.render('oauth', { title: 'Express | login post', page: `
         <pre>${JSON.stringify(req.session)}</pre>
-        <p>redirecting to ${req.session.redirect_uri}?${querystring.stringify({code})}</p>
+        <p>redirecting to <a href="${redirectingUrl}">${redirectingUrl}</a></p>
       ` });
     });
   });
@@ -86,7 +87,10 @@ router.post('/token', lib.basicAuthMW, function (req, res, next) {
     var expires_in = 3600;
     var scope = token.scopes ? token.scopes.join(" ") : undefined;
     var state = token.state;
-    var refresh_token
+
+    var user = token.user;
+    var access_token  = lib.webToken.sign({ client_id, user, scope });
+    var refresh_token = lib.webToken.sign({ client_id, user, scope }, true);
 
     res.json({
       access_token, refresh_token,

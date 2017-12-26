@@ -29,11 +29,8 @@ router.post('/loginpage', loginpagePost = function (req, res, next) {
 
     lib.generateRandom(function (err, value) {
       var code = value;
+      lib.codeStore.store(code, req.body.username, req.session.scope);
 
-      // res.render('oauth', { title: 'Express | login post', page: `
-      //   <pre>${JSON.stringify(req.body)}</pre>
-      //   <pre>${JSON.stringify(req.query)}</pre>
-      // ` });
       res.render('oauth', { title: 'Express | login post', page: `
         <pre>${JSON.stringify(req.session)}</pre>
         <p>redirecting to ${req.session.redirect_uri}?${querystring.stringify({code})}</p>
@@ -60,6 +57,12 @@ router.get('/authorize', function (req, res, next) {
       <input type="submit" />
     </form>
   `});
+});
+
+router.post('/token', function (req, res, next) {
+  var code = req.body.code;
+  var token = lib.codeStore.get(code);
+  res.json({ token });
 });
 
 module.exports = router;

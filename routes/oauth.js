@@ -29,7 +29,7 @@ router.post('/loginpage', loginpagePost = function (req, res, next) {
 
     lib.generateRandom(function (err, value) {
       var code = value;
-      lib.codeStore.store(code, req.body.username, req.session.scopes);
+      lib.codeStore.store(code, req.body.username, req.session.scopes, req.session.state);
 
       res.render('oauth', { title: 'Express | login post', page: `
         <pre>${JSON.stringify(req.session)}</pre>
@@ -62,12 +62,25 @@ router.get('/authorize', function (req, res, next) {
 /**
  * todo: basic authentication.
  */
-router.post('/token', function (req, res, next) {
-  lib.isValidClient(req.body.client_id, req.body.client_secret, function (e, r) {
+router.post('/token', lib.basicAuthMW, function (req, res, next) {
+  var client_id = req.basicAuth.username
+    || req.headers.client_id
+    || req.body.client_id;
+  var client_secret = req.basicAuth.password
+    || req.headers.client_secret
+    || req.body.client_secret;
+
+  lib.isValidClient(client_id, client_secret, function (e, r) {
     if (!r) return res.json({err: true});
 
     var code = req.body.code;
     var token = lib.codeStore.get(code);
+
+    var token_type = "bearer";
+    var expires_in = 3600;
+    var scope = token.scopes ? token.scopes.join(" ");
+    var state = token.state;
+
     res.json({ token });
   });
 });
@@ -84,6 +97,9 @@ router.post('/check_token', function (req, res, next) {
 
     res.json({ success });
   });
+});
+
+router.post('/refresh_token', function (req, res, next) {
 });
 
 module.exports = router;

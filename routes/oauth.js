@@ -78,7 +78,7 @@ router.post('/token', lib.basicAuthMW, function (req, res, next) {
 
     var token_type = "bearer";
     var expires_in = 3600;
-    var scope = token.scopes ? token.scopes.join(" ");
+    var scope = token.scopes ? token.scopes.join(" ") : undefined;
     var state = token.state;
 
     res.json({ token });

@@ -23,15 +23,20 @@ router.get('/loginpage', loginpageGet = function (req, res, next) {
 
 var loginpagePost;
 router.post('/loginpage', loginpagePost = function (req, res, next) {
-  lib.isValidUser(req.body.username, req.body.password, req.session.scope, function (err, value) {
+  var username = req.body.username;
+  var password = req.body.password;
+  var scopes = req.session.scopes;
+  var state  = req.session.state;
+
+  lib.isValidUser(username, password, scopes, function (err, value) {
     if (err) { throw err; }
     if (!value) { return res.send('goaway'); }
 
     lib.generateRandom(function (err, value) {
       var code = value;
-      lib.codeStore.store(code, req.body.username, req.session.scopes, req.session.state);
+      lib.codeStore.store(code, username, scopes, state);
 
-      var redirectingUrl = `${req.session.redirect_uri}?${querystring.stringify({code})}`;
+      var redirectingUrl = `${req.session.redirect_uri}?${querystring.stringify({code, state})}`;
       res.render('oauth', { title: 'Express | login post', page: `
         <pre>${JSON.stringify(req.session)}</pre>
         <p>redirecting to <a href="${redirectingUrl}">${redirectingUrl}</a></p>
@@ -46,8 +51,9 @@ router.post('/loginpage', loginpagePost = function (req, res, next) {
  */
 router.get('/authorize', function (req, res, next) {
   req.session.redirect_uri = req.query.redirect_uri;
-  req.session.client_id = req.query.client_id;
-  req.session.scopes = req.query.scopes;
+  req.session.client_id    = req.query.client_id;
+  req.session.scopes       = req.query.scopes;
+  req.session.state        = req.query.state;
 
   res.render('oauth', { title: 'Express | authorize get', page: `
     <pre>${JSON.stringify(req.body)}</pre>
@@ -74,7 +80,8 @@ router.post('/token', lib.basicAuthMW, function (req, res, next) {
     || req.body.client_secret;
 
   lib.isValidClient(client_id, client_secret, function (e, r) {
-    if (!r) return res.json(lib.accessTokenErrors.invalid_client);
+    if (e) return res.status(400).json(lib.accessTokenErrors.invalid_request);
+    if (!r) return res.status(400).json(lib.accessTokenErrors.invalid_client);
 
     var code = req.body.code;
     var token = lib.codeStore.get(code);

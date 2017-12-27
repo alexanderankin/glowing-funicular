@@ -9,17 +9,18 @@ var app = require('../app');
 
 var lib = require('../lib');
 
-describe.only('try do a thing', function () {
-  it('is a thing', function (done) {
-    // get client
+describe.only('Authorization Code Grant Flow', function () {
+  it('Successfully issues a valid jwt token', function (done) {
+    // get resource owner
     var jarRequest = request.defaults({ jar: true });
 
     // get server
     var server = http.createServer(app);
     server.listen(4000);
-    server.once('error', (error) => { console.log(error); done(); });
+    server.once('error', (error) => { expect(error).to.be.null; done(); });
     server.once('listening', () => {
-      // visit site
+
+      // visit client
       jarRequest.get('http://localhost:4001', function (err, resp, body) {
         expect(err).to.be.null;
         var $ = cheerio.load(body);

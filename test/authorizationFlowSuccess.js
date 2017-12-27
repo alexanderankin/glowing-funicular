@@ -6,6 +6,7 @@ var expect = require('chai').expect;
 var cheerio = require('cheerio');
 var request = require('request');
 var app = require('../app');
+var clientApp = require('./testClient/app');
 
 var lib = require('../lib');
 
@@ -19,48 +20,55 @@ describe.only('Authorization Code Grant Flow', function () {
     server.listen(4000);
     server.once('error', (error) => { expect(error).to.be.null; done(); });
     server.once('listening', () => {
+      var clientServer = http.createServer(clientApp);
+      clientServer.listen(4001);
+      clientServer.once('error', (error) => { expect(error).to.be.null; done(); });
+      clientServer.once('listening', () => {
 
-      // visit client
-      jarRequest.get('http://localhost:4001', function (err, resp, body) {
-        expect(err).to.be.null;
-        var $ = cheerio.load(body);
-        var loginLink = $('#link').attr('href');
-
-        // goto login/authorize
-        jarRequest.get(loginLink, function (err, resp, body) {
+        // visit client
+        jarRequest.get('http://localhost:4001', function (err, resp, body) {
           expect(err).to.be.null;
-
           var $ = cheerio.load(body);
-          $('#username').val('username1');
-          $('#password').val('password1');
-          var formData = $('form').serialize();
-          var formAction = $('form').attr('action');
-          formAction = url.resolve('http://localhost:4000', formAction);
+          var loginLink = $('#link').attr('href');
 
-          // authorize login (post)
-          jarRequest.post(formAction, {
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: formData
-          }, function (err, resp, body) {
+          // goto login/authorize
+          jarRequest.get(loginLink, function (err, resp, body) {
             expect(err).to.be.null;
-            var $ = cheerio.load(body);
 
-            // follow redirect, deliver code
-            var redirectCallbackURL = $('#redirecting').attr('href');
-            jarRequest.get(redirectCallbackURL, function (err, resp, body) {
+            var $ = cheerio.load(body);
+            $('#username').val('username1');
+            $('#password').val('password1');
+            var formData = $('form').serialize();
+            var formAction = $('form').attr('action');
+            formAction = url.resolve('http://localhost:4000', formAction);
+
+            // authorize login (post)
+            jarRequest.post(formAction, {
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: formData
+            }, function (err, resp, body) {
               expect(err).to.be.null;
               var $ = cheerio.load(body);
-  
-              // verify token.
-              var accessToken = $('#access_token').text().replace(/(^"|"$)/g, '');
-              console.log(accessToken);
-              lib.webToken.verify(accessToken, function (err, value) {
+
+              // follow redirect, deliver code
+              var redirectCallbackURL = $('#redirecting').attr('href');
+              jarRequest.get(redirectCallbackURL, function (err, resp, body) {
                 expect(err).to.be.null;
-                expect(value).to.be.an('object');
-                server.close();
-                done();
+                var $ = cheerio.load(body);
+
+                // verify token.
+                var accessToken = $('#access_token').text().replace(/(^"|"$)/g, '');
+                console.log(accessToken);
+                lib.webToken.verify(accessToken, function (err, value) {
+                  expect(err).to.be.null;
+                  expect(value).to.be.an('object');
+
+                  clientServer.close();
+                  server.close();
+                  done();
+                });
               });
             });
           });

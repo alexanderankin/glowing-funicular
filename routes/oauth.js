@@ -3,6 +3,7 @@ var router = express.Router();
 
 var querystring = require('querystring');
 
+var config = require('../config');
 var lib = require('../lib');
 
 /* GET home page. */
@@ -37,10 +38,17 @@ router.post('/loginpage', loginpagePost = function (req, res, next) {
       lib.codeStore.store(code, username, scopes, state);
 
       var redirectingUrl = `${req.session.redirect_uri}?${querystring.stringify({code, state})}`;
-      res.render('oauth', { title: 'Express | login post', page: `
-        <pre>${JSON.stringify(req.session)}</pre>
-        <p>redirecting to <a id="redirecting" href="${redirectingUrl}">${redirectingUrl}</a></p>
-      ` });
+
+      if (config.doNotRedirect) {
+        res.render('oauth', { title: 'Express | login post', page: `
+          <pre>${JSON.stringify(req.session)}</pre>
+          <p>redirecting to 
+            <a id="redirecting" href="${redirectingUrl}">${redirectingUrl}</a>
+          </p>
+        ` });
+      } else {
+        res.redirect(redirectingUrl);
+      }
     });
   });
 });

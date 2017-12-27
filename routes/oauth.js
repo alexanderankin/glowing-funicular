@@ -39,7 +39,7 @@ router.post('/loginpage', loginpagePost = function (req, res, next) {
       var redirectingUrl = `${req.session.redirect_uri}?${querystring.stringify({code, state})}`;
       res.render('oauth', { title: 'Express | login post', page: `
         <pre>${JSON.stringify(req.session)}</pre>
-        <p>redirecting to <a href="${redirectingUrl}">${redirectingUrl}</a></p>
+        <p>redirecting to <a id="redirecting" href="${redirectingUrl}">${redirectingUrl}</a></p>
       ` });
     });
   });
@@ -59,8 +59,8 @@ router.get('/authorize', function (req, res, next) {
     <pre>${JSON.stringify(req.body)}</pre>
     <pre>${JSON.stringify(req.query)}</pre>
     <form action="/oauth/loginpage" method="post">
-      <input type="text" name="username" />
-      <input type="text" name="password" />
+      <input type="text" name="username" id="username" />
+      <input type="text" name="password" id="password" />
       <input type="submit" />
     </form>
   `});

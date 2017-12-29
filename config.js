@@ -4,4 +4,14 @@ module.exports = {
    * and will fall back on providing a clickable link.
    */
   doNotRedirect: true,
+  /**
+   * Configurable paths
+   */
+  paths: {
+    authorization: '/authorize',
+    login: '/loginpage',
+    token: '/token',
+    tokenVerification: '/check_token',
+    tokenRefresh: '/refresh_token',
+  }
 };

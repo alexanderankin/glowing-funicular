@@ -11,7 +11,7 @@ var clientApp = require('./testClient/app');
 
 var lib = require('../lib');
 
-describe.only('Authorization Code Grant Flow', function () {
+describe('Authorization Code Grant Flow', function () {
   it('Successfully issues a valid jwt token', function (done) {
     // get resource owner
     var jarRequest = request.defaults({ jar: true });
@@ -78,7 +78,7 @@ describe.only('Authorization Code Grant Flow', function () {
     });  // once listening
   });
 
-  it.only('Successfully issues a valid jwt token with redirects', function (done) {
+  it('Successfully issues a valid jwt token with redirects', function (done) {
     // set doNotRedirect to false
     var config = require('../config');
     config.doNotRedirect = false;

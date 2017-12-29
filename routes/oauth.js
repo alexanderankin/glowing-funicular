@@ -11,19 +11,7 @@ router.get('/', function(req, res, next) {
   res.render('oauth', { title: 'Express | oauth endpoint' });
 });
 
-var loginpageGet;
-router.get('/loginpage', loginpageGet = function (req, res, next) {
-  res.render('oauth', { title: 'Express | login get', page: `
-    <form action="loginpage" method="post">
-      <input type="text" name="username" />
-      <input type="text" name="password" />
-      <input type="submit" />
-    </form>
-  ` });
-});
-
-var loginpagePost;
-router.post('/loginpage', loginpagePost = function (req, res, next) {
+router.post(config.paths.login, function (req, res, next) {
   var username = req.body.username;
   var password = req.body.password;
   var scopes = req.session.scopes;
@@ -57,7 +45,7 @@ router.post('/loginpage', loginpagePost = function (req, res, next) {
  * TODO: if (req.query.response_type === "code") {}
  * 
  */
-router.get('/authorize', function (req, res, next) {
+router.get(config.paths.authorization, function (req, res, next) {
   req.session.redirect_uri = req.query.redirect_uri;
   req.session.client_id    = req.query.client_id;
   req.session.scopes       = req.query.scopes;
@@ -66,7 +54,7 @@ router.get('/authorize', function (req, res, next) {
   res.render('oauth', { title: 'Express | authorize get', page: `
     <pre>${JSON.stringify(req.body)}</pre>
     <pre>${JSON.stringify(req.query)}</pre>
-    <form action="/oauth/loginpage" method="post">
+    <form action="${req.baseUrl}${config.paths.login}" method="post">
       <input type="text" name="username" id="username" />
       <input type="text" name="password" id="password" />
       <input type="submit" />
@@ -79,7 +67,7 @@ router.get('/authorize', function (req, res, next) {
  * 
  * https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
  */
-router.post('/token', lib.basicAuthMW, function (req, res, next) {
+router.post(config.paths.token, lib.basicAuthMW, function (req, res, next) {
   var client_id = req.basicAuth.username
     || req.headers.client_id
     || req.body.client_id;
@@ -103,20 +91,22 @@ router.post('/token', lib.basicAuthMW, function (req, res, next) {
     var scope = token.scopes ? token.scopes.join(" ") : undefined;
     var state = token.state;
 
-    var user = token.user;
-    var access_token  = lib.webToken.sign({ client_id, user, scope });
-    var refresh_token = lib.webToken.sign({ client_id, user, scope }, true);
+    lib.generateRandom((err, rand) => {
+      var user = token.user;
+      var access_token  = lib.webToken.sign({ client_id, user, scope });
+      var refresh_token = rand;
 
-    res.json({
-      access_token, refresh_token,
-      token_type, expires_in, scope, state
+      res.json({
+        access_token, refresh_token,
+        token_type, expires_in, scope, state
+      });
     });
   });
 }, function (err, req, res, next) {
   res.status(400).json(lib.accessTokenErrors.invalid_request);
 });
 
-router.post('/check_token', function (req, res, next) {
+router.post(config.paths.tokenVerification, function (req, res, next) {
   var token = req.body.token;
   lib.checkToken(function (err, verdict) {
     var success;
@@ -130,7 +120,7 @@ router.post('/check_token', function (req, res, next) {
   });
 });
 
-router.post('/refresh_token', function (req, res, next) {
+router.post(config.paths.tokenRefresh, function (req, res, next) {
 });
 
 module.exports = router;

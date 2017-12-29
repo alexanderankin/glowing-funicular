@@ -6,10 +6,10 @@ var expect = require('chai').expect;
 var validUrl = require('valid-url');
 var cheerio = require('cheerio');
 var request = require('request');
-var app = require('../app');
-var clientApp = require('./testClient/app');
+var app = require('../../../app');
+var clientApp = require('../../testClient/app');
 
-var lib = require('../lib');
+var lib = require('../../../lib');
 
 describe('Authorization Code Grant Flow', function () {
   it('Successfully issues a valid jwt token', function (done) {
@@ -51,24 +51,35 @@ describe('Authorization Code Grant Flow', function () {
               body: formData
             }, function (err, resp, body) {
               expect(err).to.be.null;
-              var $ = cheerio.load(body);
+              if (resp.statusCode === 302) {
+                var redirectCallbackURL = req.headers.location;
+              } else {
+                var $ = cheerio.load(body);
+                var redirectCallbackURL = $('#redirecting').attr('href');
+              }
+              console.log(redirectCallbackURL);
 
               // follow redirect, deliver code
-              var redirectCallbackURL = $('#redirecting').attr('href');
               jarRequest.get(redirectCallbackURL, function (err, resp, body) {
                 expect(err).to.be.null;
                 var $ = cheerio.load(body);
 
                 // verify token.
                 var accessToken = $('#access_token').text().replace(/(^"|"$)/g, '');
-                console.log(accessToken);
                 lib.webToken.verify(accessToken, function (err, value) {
                   expect(err).to.be.null;
                   expect(value).to.be.an('object');
 
                   clientServer.close();
                   server.close();
-                  done();
+
+                  var firstDone = false;
+                  var bothDone = function() {
+                    if (firstDone) { done(); }
+                    firstDone = true;
+                  };
+                  clientServer.on('close', bothDone);
+                  server.on('close', bothDone);
                 });
               });
             });
@@ -80,7 +91,7 @@ describe('Authorization Code Grant Flow', function () {
 
   it('Successfully issues a valid jwt token with redirects', function (done) {
     // set doNotRedirect to false
-    var config = require('../config');
+    var config = require('../../../config');
     config.doNotRedirect = false;
 
     // get resource owner
@@ -139,7 +150,14 @@ describe('Authorization Code Grant Flow', function () {
 
                   clientServer.close();
                   server.close();
-                  done();
+
+                  var firstDone = false;
+                  var bothDone = function() {
+                    if (firstDone) { done(); }
+                    firstDone = true;
+                  };
+                  clientServer.on('close', bothDone);
+                  server.on('close', bothDone);
                 });
               });
             });
